@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MacroScan - Elite</title>
+    
+    <!-- SISTEMA ANTI-PIRATARIA / IFRAME LOCK -->
+    <script>
+        if (window.self === window.top) {
+            document.documentElement.innerHTML = `
+                <body style="background-color: #0a0b0d; color: #d1d4dc; font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; text-align: center; margin: 0; padding: 20px;">
+                    <div>
+                        <h1 style="color: #ef5350; margin-bottom: 10px; font-size: 28px; text-transform: uppercase; letter-spacing: 2px;">Acesso Bloqueado</h1>
+                        <p style="font-size: 16px; line-height: 1.5; color: #787b86;">O MacroScan é restrito para alunos ativos.<br>Por favor, faça login na sua área de membros da <b>Hotmart</b> para operar a ferramenta.</p>
+                    </div>
+                </body>
+            `;
+            throw new Error("Acesso direto bloqueado por segurança.");
+        }
+    </script>
+
+    <style>
+        :root {
+            --bg-base: #0a0b0d;
+            --bg-panel: #131722;
+            --bg-hover: #1e222d;
+            --bg-active: #2a2e39;
+            --text-main: #d1d4dc;
+            --text-muted: #787b86;
+            --accent: #f2a900; 
+            --accent-hover: #ffc233;
+            --border-color: #2a2e39;
+            --buy-color: #26a69a;
+            --buy-hover: #33b5a8;
+            --sell-color: #ef5350;
+            --sell-hover: #f56664;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        header {
+            background-color: var(--bg-panel);
+            padding: 15px 25px;
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            position: relative;
+            z-index: 10;
+        }
+        
+        header h1 { 
+            color: var(--accent); 
+            font-size: 20px; 
+            text-transform: uppercase; 
+            letter-spacing: 2px; 
+            font-weight: 700; 
+            margin: 0; 
+            position: absolute;
+            left: 0;
+            right: 0;
+            text-align: center;
+            pointer-events: none;
+        }
+
+        .header-controls {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            z-index: 10;
+        }
+
+        .btn-fullscreen {
+            background-color: var(--bg-active);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .btn-fullscreen:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .lang-selector {
+            display: flex;
+            align-items: center;
+        }
+
+        .lang-selector label {
+            font-size: 11px;
+            font-weight: bold;
+            margin-right: 8px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .lang-selector select {
+            background-color: var(--bg-active);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .lang-selector select:hover { border-color: var(--accent); }
+
+        .layout { display: flex; flex: 1; overflow: hidden; }
+
+        .sidebar { 
+            width: 300px; 
+            background-color: var(--bg-panel); 
+            border-right: 1px solid var(--border-color); 
+            display: flex; 
+            flex-direction: column; 
+            overflow-y: auto; 
+        }
+        
+        .sidebar::-webkit-scrollbar { width: 6px; }
+        .sidebar::-webkit-scrollbar-thumb { background: #363a45; border-radius: 3px; }
+
+        .sidebar-header { 
+            padding: 15px; 
+            font-size: 12px; 
+            text-transform: uppercase; 
+            color: var(--text-muted); 
+            font-weight: bold; 
+            border-bottom: 1px solid var(--border-color); 
+            background-color: var(--bg-base); 
+            letter-spacing: 1px; 
+        }
+
+        details { border-bottom: 1px solid var(--border-color); }
+        details summary { padding: 12px 15px; cursor: pointer; font-size: 13px; font-weight: 600; background-color: var(--bg-hover); color: var(--text-main); list-style: none; display: flex; align-items: center; transition: background 0.2s; position: sticky; top: 0; z-index: 5; border-top: 1px solid rgba(255,255,255,0.05); }
+        details summary::-webkit-details-marker { display: none; }
+        details summary::before { content: '▶'; font-size: 10px; margin-right: 10px; color: var(--text-muted); transition: transform 0.2s; }
+        details[open] summary::before { transform: rotate(90deg); }
+        details summary:hover { background-color: var(--bg-active); }
+        
+        .asset-list { list-style: none; background-color: var(--bg-panel); }
+        .asset-list li { padding: 8px 15px 8px 35px; font-size: 12px; cursor: pointer; color: #a3a6af; border-bottom: 1px solid rgba(42, 46, 57, 0.3); transition: all 0.2s; display: flex; justify-content: space-between; align-items: center;}
+        .asset-list li span { font-size: 10px; background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 3px; }
+        .asset-list li:hover { background-color: var(--bg-hover); color: #fff; }
+        .asset-list li.active { color: var(--accent); background-color: rgba(242, 169, 0, 0.05); border-left: 3px solid var(--accent); padding-left: 32px; font-weight: bold; }
+        .asset-list li.active span { background: rgba(242, 169, 0, 0.1); color: var(--accent); }
+
+        .calculator-panel { padding: 15px; background-color: var(--bg-base); }
+        .form-group { margin-bottom: 12px; }
+        .form-group label { display: block; margin-bottom: 5px; font-size: 11px; color: var(--text-muted); text-transform: uppercase; }
+        .form-group input { width: 100%; padding: 10px; background-color: var(--bg-panel); border: 1px solid var(--border-color); color: white; border-radius: 4px; font-size: 13px; }
+        .form-group input:focus { outline: none; border-color: var(--accent); }
+        .btn { width: 100%; padding: 12px; background-color: var(--accent); color: #000; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 12px; transition: background 0.3s; }
+        .btn:hover { background-color: var(--accent-hover); }
+        .result-box { margin-top: 15px; padding: 12px; background-color: rgba(242, 169, 0, 0.1); border: 1px solid rgba(242, 169, 0, 0.2); border-radius: 4px; }
+        .result-box span { display: block; font-size: 11px; margin-bottom: 3px; color: var(--text-muted); }
+        .result-box .lote { font-size: 20px; font-weight: bold; color: var(--accent); margin-top: 5px; margin-bottom: 0; }
+
+        .main-content { flex: 1; padding: 20px; overflow-y: auto; background-color: var(--bg-base); display: flex; flex-direction: column; }
+        .main-content::-webkit-scrollbar { width: 8px; }
+        .main-content::-webkit-scrollbar-thumb { background: #363a45; border-radius: 4px; }
+        
+        .active-asset-title { font-size: 24px; color: #fff; margin-bottom: 15px; display: flex; align-items: center; gap: 10px; }
+        .active-asset-title span { font-size: 12px; background-color: var(--bg-hover); padding: 4px 8px; border-radius: 4px; color: var(--text-muted); font-weight: normal; }
+
+        .setup-engine {
+            background-color: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        .setup-engine h3 { font-size: 13px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 10px; }
+        .setup-actions { display: flex; gap: 8px; }
+        
+        .setup-btn {
+            background-color: var(--bg-hover); color: var(--text-main); border: 1px solid var(--border-color);
+            padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; transition: all 0.2s;
+        }
+        .setup-btn:hover { background-color: var(--bg-active); border-color: var(--text-muted); }
+        
+        .btn-compra { border-left: 3px solid var(--buy-color); }
+        .btn-compra:hover, .btn-compra.selected { background-color: rgba(38, 166, 154, 0.1); border-color: var(--buy-color); color: var(--buy-color); }
+        
+        .btn-venda { border-left: 3px solid var(--sell-color); }
+        .btn-venda:hover, .btn-venda.selected { background-color: rgba(239, 83, 80, 0.1); border-color: var(--sell-color); color: var(--sell-color); }
+        
+        .btn-lateral { border-left: 3px solid var(--accent); }
+        .btn-lateral:hover, .btn-lateral.selected { background-color: rgba(242, 169, 0, 0.1); border-color: var(--accent); color: var(--accent); }
+        
+        .setup-result {
+            flex: 1;
+            background-color: var(--bg-base);
+            padding: 12px 15px;
+            border-radius: 4px;
+            border-left: 4px solid #363a45;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        .setup-result strong { display: block; margin-bottom: 4px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .setup-result .highlight { font-weight: bold; color: #fff; }
+
+        .scanner-grid { 
+            display: grid; 
+            grid-template-columns: repeat(3, 1fr); 
+            gap: 15px; 
+        }
+        
+        .widget-box {
+            background-color: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        }
+        
+        .widget-label {
+            background-color: var(--bg-active);
+            color: var(--accent);
+            text-align: center;
+            padding: 8px 0;
+            font-size: 14px;
+            font-weight: bold;
+            border-bottom: 1px solid var(--border-color);
+            letter-spacing: 1px;
+        }
+
+        .widget-content { height: 320px; width: 100%; position: relative; background-color: var(--bg-panel); }
+
+        .right-panel { width: 320px; background-color: var(--bg-panel); border-left: 1px solid var(--border-color); display: flex; flex-direction: column; }
+        .right-panel-header { padding: 15px; font-size: 12px; text-transform: uppercase; color: var(--text-muted); font-weight: bold; border-bottom: 1px solid var(--border-color); background-color: var(--bg-base); letter-spacing: 1px; }
+        .calendar-container { flex: 1; overflow: hidden; position: relative; }
+
+        @media (max-width: 1500px) { .scanner-grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 1200px) { .right-panel { display: none; } }
+        @media (max-width: 768px) {
+            body { height: auto; overflow-y: auto; }
+            .layout { flex-direction: column; overflow: visible; }
+            .sidebar { width: 100%; border-right: none; border-bottom: 2px solid var(--accent); max-height: 400px; }
+            .main-content { overflow: visible; padding: 15px 10px; }
+            .setup-engine { flex-direction: column; align-items: stretch; gap: 15px; }
+            .setup-actions { flex-direction: column; }
+            .setup-btn { padding: 12px; font-size: 14px; text-align: center; }
+            .setup-result { border-left: none; border-top: 4px solid var(--border-color); padding-top: 15px; }
+            .scanner-grid { grid-template-columns: 1fr; }
+            .widget-content { height: 350px; }
+            .right-panel { display: flex; width: 100%; border-left: none; border-top: 2px solid var(--accent); height: 600px; }
+            .header-controls { flex-direction: column; align-items: flex-end; gap: 5px; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>MacroScan</h1>
+        <div class="header-controls">
+            <button class="btn-fullscreen" onclick="toggleFullScreen()">
+                🔲 <span data-i18n="fullscreenBtn">Tela Cheia</span>
+            </button>
+            <div class="lang-selector">
+                <label for="lang-switch" data-i18n="langLabel">Idioma:</label>
+                <select id="lang-switch" onchange="changeLanguage(this.value)">
+                    <option value="br">PT-BR</option>
+                    <option value="en">EN</option>
+                    <option value="es">ES</option>
+                </select>
+            </div>
+        </div>
+    </header>
+
+    <div class="layout">
+        <aside class="sidebar">
+            <div class="sidebar-header" data-i18n="marketWatch">Market Watch (Ativos)</div>
+            
+            <details>
+                <summary data-i18n="fxMajors">Forex - Majors</summary>
+                <ul class="asset-list">
+                    <li class="active" onclick="loadAsset('OANDA:EURUSD', 'EUR/USD', 'USD,EUR', this)">EURUSD <span>Major</span></li>
+                    <li onclick="loadAsset('OANDA:GBPUSD', 'GBP/USD', 'USD,GBP', this)">GBPUSD <span>Major</span></li>
+                    <li onclick="loadAsset('OANDA:USDJPY', 'USD/JPY', 'USD,JPY', this)">USDJPY <span>Major</span></li>
+                    <li onclick="loadAsset('OANDA:USDCAD', 'USD/CAD', 'USD,CAD', this)">USDCAD <span>Major</span></li>
+                    <li onclick="loadAsset('OANDA:USDCHF', 'USD/CHF', 'USD,CHF', this)">USDCHF <span>Major</span></li>
+                    <li onclick="loadAsset('OANDA:AUDUSD', 'AUD/USD', 'USD,AUD', this)">AUDUSD <span>Major</span></li>
+                    <li onclick="loadAsset('OANDA:NZDUSD', 'NZD/USD', 'USD,NZD', this)">NZDUSD <span>Major</span></li>
+                </ul>
+            </details>
+
+            <details>
+                <summary data-i18n="fxMinors">Forex - Minors & Crosses</summary>
+                <ul class="asset-list">
+                    <li onclick="loadAsset('OANDA:EURGBP', 'EUR/GBP', 'EUR,GBP', this)">EURGBP <span>Cross</span></li>
+                    <li onclick="loadAsset('OANDA:EURJPY', 'EUR/JPY', 'EUR,JPY', this)">EURJPY <span>Cross</span></li>
+                    <li onclick="loadAsset('OANDA:GBPJPY', 'GBP/JPY', 'GBP,JPY', this)">GBPJPY <span>Cross</span></li>
+                    <li onclick="loadAsset('OANDA:AUDCAD', 'AUD/CAD', 'AUD,CAD', this)">AUDCAD <span>Cross</span></li>
+                    <li onclick="loadAsset('OANDA:AUDJPY', 'AUD/JPY', 'AUD,JPY', this)">AUDJPY <span>Cross</span></li>
+                    <li onclick="loadAsset('OANDA:AUDNZD', 'AUD/NZD', 'AUD,NZD', this)">AUDNZD <span>Cross</span></li>
+                    <li onclick="loadAsset('OANDA:CADJPY', 'CAD/JPY', 'CAD,JPY', this)">CADJPY <span>Cross</span></li>
+                    <li onclick="loadAsset('OANDA:AUDCHF', 'AUD/CHF', 'AUD,CHF', this)">AUDCHF <span>Cross</span></li>
+                    <li onclick="loadAsset('OANDA:EURNZD', 'EUR/NZD', 'EUR,NZD', this)">EURNZD <span>Cross</span></li>
+                    <li onclick="loadAsset('OANDA:EURCAD', 'EUR/CAD', 'EUR,CAD', this)">EURCAD <span>Cross</span></li>
+                    <li onclick="loadAsset('OANDA:EURAUD', 'EUR/AUD', 'EUR,AUD', this)">EURAUD <span>Cross</span></li>
+                    <li onclick="loadAsset('OANDA:EURCHF', 'EUR/CHF', 'EUR,CHF', this)">EURCHF <span>Cross</span></li>
+                    <li onclick="loadAsset('OANDA:GBPCAD', 'GBP/CAD', 'GBP,CAD', this)">GBPCAD <span>Cross</span></li>
+                    <li onclick="loadAsset('OANDA:GBPCHF', 'GBP/CHF', 'GBP,CHF', this)">GBPCHF <span>Cross</span></li>
+                    <li onclick="loadAsset('OANDA:GBPNZD', 'GBP/NZD', 'GBP,NZD', this)">GBPNZD <span>Cross</span></li>
+                    <li onclick="loadAsset('OANDA:GBPAUD', 'GBP/AUD', 'GBP,AUD', this)">GBPAUD <span>Cross</span></li>
+                    <li onclick="loadAsset('OANDA:NZDCAD', 'NZD/CAD', 'NZD,CAD', this)">NZDCAD <span>Cross</span></li>
+                    <li onclick="loadAsset('OANDA:NZDCHF', 'NZD/CHF', 'NZD,CHF', this)">NZDCHF <span>Cross</span></li>
+                    <li onclick="loadAsset('OANDA:NZDJPY', 'NZD/JPY', 'NZD,JPY', this)">NZDJPY <span>Cross</span></li>
+                </ul>
+            </details>
+
+            <details>
+                <summary data-i18n="fxExotics">Forex - Exotics</summary>
+                <ul class="asset-list">
+                    <li onclick="loadAsset('FX_IDC:USDBRL', 'USD/BRL', 'USD,BRL', this)">USDBRL <span>Exotic</span></li>
+                    <li onclick="loadAsset('OANDA:SGDJPY', 'SGD/JPY', 'SGD,JPY', this)">SGDJPY <span>Exotic</span></li>
+                </ul>
+            </details>
+
+            <details>
+                <summary data-i18n="metals">Metals</summary>
+                <ul class="asset-list">
+                    <li onclick="loadAsset('OANDA:XAUUSD', 'Ouro (XAU/USD)', 'USD', this)">XAUUSD <span>Gold</span></li>
+                    <li onclick="loadAsset('OANDA:XAUEUR', 'Ouro (XAU/EUR)', 'EUR', this)">XAUEUR <span>Gold</span></li>
+                    <li onclick="loadAsset('OANDA:XAGUSD', 'Prata (XAG/USD)', 'USD', this)">XAGUSD <span>Silver</span></li>
+                </ul>
+            </details>
+
+            <details>
+                <summary data-i18n="indices">Índices Globais</summary>
+                <ul class="asset-list">
+                    <li onclick="loadAsset('SP:SPX', 'S&P 500 (US500)', 'USD', this)">US500 <span>S&P</span></li>
+                    <li onclick="loadAsset('NASDAQ:NDX', 'Nasdaq (USTECH)', 'USD', this)">USTECH <span>Nasdaq</span></li>
+                    <li onclick="loadAsset('DJ:DJI', 'Dow Jones (US30)', 'USD', this)">US30 <span>Dow</span></li>
+                    <li onclick="loadAsset('RUSSELL:RUT', 'Russell 2000 (US2000)', 'USD', this)">US2000 <span>Russell</span></li>
+                    <li onclick="loadAsset('XETR:DAX', 'DAX 40 (GER40)', 'EUR', this)">GER40 <span>DAX</span></li>
+                    <li onclick="loadAsset('TVC:HSI', 'Hang Seng (HK50)', 'HKD', this)">HK50 <span>Hang Seng</span></li>
+                    <li onclick="loadAsset('TVC:NI225', 'Nikkei 225 (JPN225)', 'JPY', this)">JPN225 <span>Nikkei</span></li>
+                </ul>
+            </details>
+
+            <details>
+                <summary data-i18n="crypto">Criptomoedas</summary>
+                <ul class="asset-list">
+                    <li onclick="loadAsset('BINANCE:BTCUSDT', 'Bitcoin (BTC/USD)', 'USD', this)">BTCUSD <span>Crypto</span></li>
+                    <li onclick="loadAsset('BINANCE:ETHUSDT', 'Ethereum (ETH/USD)', 'USD', this)">ETHUSD <span>Crypto</span></li>
+                    <li onclick="loadAsset('BINANCE:ADAUSDT', 'Cardano (ADA/USD)', 'USD', this)">ADAUSD <span>Crypto</span></li>
+                    <li onclick="loadAsset('BINANCE:LTCUSDT', 'Litecoin (LTC/USD)', 'USD', this)">LTCUSD <span>Crypto</span></li>
+                </ul>
+            </details>
+
+            <div class="sidebar-header" data-i18n="auxToolsTitle" style="border-top: 1px solid var(--border-color);">Ferramentas Auxiliares</div>
+            
+            <details>
+                <summary data-i18n="calcTitle">Calculadora de Lote</summary>
+                <div class="calculator-panel">
+                    <div class="form-group"><label data-i18n="calcCap">Capital ($)</label><input type="number" id="capital" placeholder="1000"></div>
+                    <div class="form-group"><label data-i18n="calcRisk">Risco (%)</label><input type="number" id="risco" placeholder="1"></div>
+                    <div class="form-group"><label data-i18n="calcStop">Stop (Pips)</label><input type="number" id="stop" placeholder="20"></div>
+                    <button class="btn" onclick="calcularLote()" data-i18n="calcBtn">Calcular Lote</button>
+                    <div class="result-box" id="result-box" style="display:none;"><span id="valorRisco"><span data-i18n="riskLabel">Risco: $</span><span id="riskAmount">0.00</span></span><span class="lote" id="resultadoLote">0.00</span></div>
+                </div>
+            </details>
+
+        </aside>
+
+        <main class="main-content">
+            <h2 class="active-asset-title" id="asset-title">EUR/USD <span>Major</span></h2>
+            
+            <div class="setup-engine">
+                <div>
+                    <h3 data-i18n="macroTitle">O que o Macro (H1 / H4) aponta?</h3>
+                    <div class="setup-actions">
+                        <button class="setup-btn btn-compra" onclick="showSetup('compra', this)" data-i18n="btnBuy">Forte Compra</button>
+                        <button class="setup-btn btn-venda" onclick="showSetup('venda', this)" data-i18n="btnSell">Forte Venda</button>
+                        <button class="setup-btn btn-lateral" onclick="showSetup('lateral', this)" data-i18n="btnNeutral">Neutro / Ausente</button>
+                    </div>
+                </div>
+                <div class="setup-result" id="setup-result" style="border-top-color: var(--text-muted);">
+                    <strong style="color: var(--text-muted);" data-i18n="setupWaitTitle">Aguardando leitura do operador...</strong>
+                    <span data-i18n="setupWaitDesc">Confira a tendência nos medidores H1 e H4 abaixo e clique no botão correspondente acima para liberar a regra operacional do ativo.</span>
+                </div>
+            </div>
+
+            <div class="scanner-grid" id="scanner-grid">
+                <!-- Widgets injetados via DOM -->
+            </div>
+        </main>
+
+        <aside class="right-panel">
+            <div class="right-panel-header" data-i18n="calTitle">Calendário Econômico</div>
+            <div class="calendar-container" id="calendar-container"></div>
+        </aside>
+    </div>
+
+    <script>
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch((err) => {
+                    alert(`Erro ao tentar abrir tela cheia: ${err.message}`);
+                });
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        }
+
+        const i18n = {
+            br: {
+                langLabel: "Idioma:",
+                fullscreenBtn: "Tela Cheia",
+                marketWatch: "Market Watch (Ativos)",
+                fxMajors: "Forex - Majors",
+                fxMinors: "Forex - Minors & Crosses",
+                fxExotics: "Forex - Exotics",
+                metals: "Metals",
+                indices: "Índices Globais",
+                crypto: "Criptomoedas",
+                auxToolsTitle: "Ferramentas Auxiliares",
+                calcTitle: "Calculadora de Lote",
+                calcCap: "Capital ($)",
+                calcRisk: "Risco (%)",
+                calcStop: "Stop (Pips)",
+                calcBtn: "Calcular Lote",
+                riskLabel: "Risco: $",
+                macroTitle: "O que o Macro (H1 / H4) aponta?",
+                btnBuy: "Forte Compra",
+                btnSell: "Forte Venda",
+                btnNeutral: "Neutro / Ausente",
+                setupWaitTitle: "Aguardando leitura do operador...",
+                setupWaitDesc: "Confira a tendência nos medidores H1 e H4 abaixo e clique no botão correspondente acima para liberar a regra operacional do ativo.",
+                calTitle: "Calendário Econômico",
+                tfs: {
+                    "5m": "M5 (Micro Tendência)",
+                    "15m": "M15 (Day Trade)",
+                    "30m": "M30 (Confirmação)",
+                    "1h": "H1 (Intraday Macro)",
+                    "4h": "H4 (Direção Macro)",
+                    "1D": "D1 (Diário)"
+                },
+                setups: {
+                    compra: `
+                        <strong style="color: var(--buy-color);">Operacional de Compra (Trend Following)</strong>
+                        <span class="highlight">O que fazer:</span> Aguarde o preço recuar para as Médias Móveis (ex: 9 e 20) no tempo gráfico M5 ou M15. Procure padrões de reversão (martelo, engolfo de alta) apoiados na média para <span class="highlight" style="color: var(--buy-color);">COMPRAR</span> a favor do movimento Macro.<br>
+                        <span class="highlight" style="color: var(--sell-color); margin-top: 5px; display: inline-block;">Proibido:</span> Tentar achar o topo e entrar vendido contra a tendência do H4.
+                    `,
+                    venda: `
+                        <strong style="color: var(--sell-color);">Operacional de Venda (Trend Following)</strong>
+                        <span class="highlight">O que fazer:</span> Aguarde o preço repicar até as Médias Móveis no tempo gráfico M5 ou M15. Procure padrões de exaustão (estrela cadente, engolfo de baixa) tocando a média para <span class="highlight" style="color: var(--sell-color);">VENDER</span> a favor do sangramento Macro.<br>
+                        <span class="highlight" style="color: var(--sell-color); margin-top: 5px; display: inline-block;">Proibido:</span> Tentar adivinhar o fundo e comprar faca caindo contra o H4.
+                    `,
+                    lateral: `
+                        <strong style="color: var(--accent);">Operacional de Lateralização (Caixote)</strong>
+                        <span class="highlight">O que fazer:</span> O preço está sem direção. Trace o suporte e a resistência clara do dia ou utilize Bandas de Bollinger. Compre nas extremidades inferiores (suporte) e venda nas extremidades superiores (resistência).<br>
+                        <span class="highlight" style="color: var(--sell-color); margin-top: 5px; display: inline-block;">Proibido:</span> Operar rompimento no meio do caixote. A chance de falso rompimento em mercado lateral é superior a 80%.
+                    `
+                }
+            },
+            en: {
+                langLabel: "Language:",
+                fullscreenBtn: "Fullscreen",
+                marketWatch: "Market Watch (Assets)",
+                fxMajors: "Forex - Majors",
+                fxMinors: "Forex - Minors & Crosses",
+                fxExotics: "Forex - Exotics",
+                metals: "Metals",
+                indices: "Global Indices",
+                crypto: "Cryptocurrencies",
+                auxToolsTitle: "Auxiliary Tools",
+                calcTitle: "Lot Calculator",
+                calcCap: "Capital ($)",
+                calcRisk: "Risk (%)",
+                calcStop: "Stop (Pips)",
+                calcBtn: "Calculate Lot",
+                riskLabel: "Risk: $",
+                macroTitle: "What does the Macro (H1 / H4) indicate?",
+                btnBuy: "Strong Buy",
+                btnSell: "Strong Sell",
+                btnNeutral: "Neutral / Ranging",
+                setupWaitTitle: "Awaiting operator reading...",
+                setupWaitDesc: "Check the trend on the H1 and H4 meters below and click the corresponding button above to unlock the operational rule for the asset.",
+                calTitle: "Economic Calendar",
+                tfs: {
+                    "5m": "M5 (Micro Trend)",
+                    "15m": "M15 (Day Trade)",
+                    "30m": "M30 (Confirmation)",
+                    "1h": "H1 (Intraday Macro)",
+                    "4h": "H4 (Macro Direction)",
+                    "1D": "D1 (Daily)"
+                },
+                setups: {
+                    compra: `
+                        <strong style="color: var(--buy-color);">Buy Operational (Trend Following)</strong>
+                        <span class="highlight">What to do:</span> Wait for the price to pull back to the Moving Averages (e.g., 9 and 20) on the M5 or M15 timeframe. Look for reversal patterns (hammer, bullish engulfing) supported by the average to <span class="highlight" style="color: var(--buy-color);">BUY</span> in favor of the Macro movement.<br>
+                        <span class="highlight" style="color: var(--sell-color); margin-top: 5px; display: inline-block;">Forbidden:</span> Trying to pick the top and selling against the H4 trend.
+                    `,
+                    venda: `
+                        <strong style="color: var(--sell-color);">Sell Operational (Trend Following)</strong>
+                        <span class="highlight">What to do:</span> Wait for the price to rally to the Moving Averages on the M5 or M15 timeframe. Look for exhaustion patterns (shooting star, bearish engulfing) touching the average to <span class="highlight" style="color: var(--sell-color);">SELL</span> in favor of the Macro bleeding.<br>
+                        <span class="highlight" style="color: var(--sell-color); margin-top: 5px; display: inline-block;">Forbidden:</span> Trying to pick the bottom and catching a falling knife against the H4 trend.
+                    `,
+                    lateral: `
+                        <strong style="color: var(--accent);">Ranging Operational (Box)</strong>
+                        <span class="highlight">What to do:</span> The price has no defined direction. Draw clear daily support and resistance or use Bollinger Bands. Buy at the lower edges (support) and sell at the upper edges (resistance).<br>
+                        <span class="highlight" style="color: var(--sell-color); margin-top: 5px; display: inline-block;">Forbidden:</span> Trading breakouts in the middle of the box. The chance of a false breakout in a ranging market is over 80%.
+                    `
+                }
+            },
+            es: {
+                langLabel: "Idioma:",
+                fullscreenBtn: "Pantalla Completa",
+                marketWatch: "Market Watch (Activos)",
+                fxMajors: "Forex - Mayores",
+                fxMinors: "Forex - Menores y Cruces",
+                fxExotics: "Forex - Exóticos",
+                metals: "Metales",
+                indices: "Índices Globales",
+                crypto: "Criptomonedas",
+                auxToolsTitle: "Herramientas Auxiliares",
+                calcTitle: "Calculadora de Lotes",
+                calcCap: "Capital ($)",
+                calcRisk: "Riesgo (%)",
+                calcStop: "Stop (Pips)",
+                calcBtn: "Calcular Lote",
+                riskLabel: "Riesgo: $",
+                macroTitle: "¿Qué indica el Macro (H1 / H4)?",
+                btnBuy: "Fuerte Compra",
+                btnSell: "Fuerte Venta",
+                btnNeutral: "Neutral / Rango",
+                setupWaitTitle: "Esperando lectura del operador...",
+                setupWaitDesc: "Compruebe la tendencia en los medidores H1 y H4 a continuación y haga clic en el botón correspondiente arriba para liberar la regla operativa del activo.",
+                calTitle: "Calendario Económico",
+                tfs: {
+                    "5m": "M5 (Micro Tendencia)",
+                    "15m": "M15 (Day Trade)",
+                    "30m": "M30 (Confirmación)",
+                    "1h": "H1 (Intraday Macro)",
+                    "4h": "H4 (Dirección Macro)",
+                    "1D": "D1 (Diario)"
+                },
+                setups: {
+                    compra: `
+                        <strong style="color: var(--buy-color);">Operativa de Compra (Trend Following)</strong>
+                        <span class="highlight">Qué hacer:</span> Espere a que el precio retroceda a las Medias Móviles (ej. 9 y 20) en el marco de tiempo M5 o M15. Busque patrones de reversión (martillo, envolvente alcista) apoyados en la media para <span class="highlight" style="color: var(--buy-color);">COMPRAR</span> a favor del movimiento Macro.<br>
+                        <span class="highlight" style="color: var(--sell-color); margin-top: 5px; display: inline-block;">Prohibido:</span> Intentar adivinar el techo y vender contra la tendencia de H4.
+                    `,
+                    venda: `
+                        <strong style="color: var(--sell-color);">Operativa de Venta (Trend Following)</strong>
+                        <span class="highlight">Qué hacer:</span> Espere a que el precio rebote hacia las Medias Móviles en M5 o M15. Busque patrones de agotamiento (estrella fugaz, envolvente bajista) tocando la media para <span class="highlight" style="color: var(--sell-color);">VENDER</span> a favor del sangrado Macro.<br>
+                        <span class="highlight" style="color: var(--sell-color); margin-top: 5px; display: inline-block;">Prohibido:</span> Intentar adivinar el fondo y comprar contra la tendencia de H4.
+                    `,
+                    lateral: `
+                        <strong style="color: var(--accent);">Operativa Lateral (Caja)</strong>
+                        <span class="highlight">Qué hacer:</span> El precio no tiene dirección definida. Trace el soporte y la resistencia clara del día o utilice Bandas de Bollinger. Compre en los extremos inferiores (soporte) y venda en los extremos superiores (resistencia).<br>
+                        <span class="highlight" style="color: var(--sell-color); margin-top: 5px; display: inline-block;">Prohibido:</span> Operar rupturas en el medio de la caja. La probabilidad de una falsa ruptura en un mercado lateral es superior al 80%.
+                    `
+                }
+            }
+        };
+
+        let currentLocale = 'br';
+        let currentAsset = { symbol: 'OANDA:EURUSD', title: 'EUR/USD', currencies: 'USD,EUR' };
+        let currentSetup = null;
+
+        const timeframesIds = ["5m", "15m", "30m", "1h", "4h", "1D"];
+
+        function changeLanguage(lang) {
+            currentLocale = lang;
+            const t = i18n[lang];
+
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if(t[key]) {
+                    el.innerHTML = t[key];
+                }
+            });
+
+            if (currentSetup) {
+                const resultBox = document.getElementById('setup-result');
+                resultBox.innerHTML = t.setups[currentSetup];
+            }
+
+            loadAsset(currentAsset.symbol, currentAsset.title, currentAsset.currencies, document.querySelector('.asset-list li.active'), true);
+        }
+
+        function loadAsset(symbol, title, currencies, element, isLangChange = false) {
+            currentAsset = { symbol, title, currencies };
+
+            if(element) {
+                document.querySelectorAll('.asset-list li').forEach(li => li.classList.remove('active'));
+                element.classList.add('active');
+                const type = element.querySelector('span').innerText;
+                document.getElementById('asset-title').innerHTML = `${title} <span>${type}</span>`;
+            }
+            
+            if (!isLangChange) {
+                currentSetup = null;
+                document.querySelectorAll('.setup-btn').forEach(btn => btn.classList.remove('selected'));
+                const setupBox = document.getElementById('setup-result');
+                setupBox.innerHTML = `<strong style="color: var(--text-muted);">${i18n[currentLocale].setupWaitTitle}</strong><span>${i18n[currentLocale].setupWaitDesc}</span>`;
+                setupBox.style.borderLeftColor = 'var(--text-muted)';
+                setupBox.style.borderTopColor = 'var(--text-muted)';
+                setupBox.style.backgroundColor = 'var(--bg-base)';
+            }
+
+            const grid = document.getElementById('scanner-grid');
+            grid.innerHTML = ''; 
+
+            timeframesIds.forEach(tfId => {
+                const widgetBox = document.createElement('div');
+                widgetBox.className = 'widget-box';
+                
+                const widgetLabel = document.createElement('div');
+                widgetLabel.className = 'widget-label';
+                widgetLabel.innerText = i18n[currentLocale].tfs[tfId];
+                widgetBox.appendChild(widgetLabel);
+
+                const widgetContent = document.createElement('div');
+                widgetContent.className = 'widget-content';
+
+                const container = document.createElement('div');
+                container.className = 'tradingview-widget-container';
+                container.style.height = '100%';
+                container.style.width = '100%';
+                
+                const widget = document.createElement('div');
+                widget.className = 'tradingview-widget-container__widget';
+                widget.style.height = '100%'; 
+                widget.style.width = '100%';
+                
+                container.appendChild(widget);
+
+                const script = document.createElement('script');
+                script.type = 'text/javascript';
+                script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-technical-analysis.js';
+                script.async = true;
+                
+                script.innerHTML = JSON.stringify({
+                    "interval": tfId,
+                    "width": "100%",
+                    "isTransparent": true,
+                    "height": "100%", 
+                    "symbol": symbol,
+                    "showIntervalTabs": false,
+                    "displayMode": "single",
+                    "locale": currentLocale,
+                    "colorTheme": "dark"
+                });
+
+                container.appendChild(script);
+                widgetContent.appendChild(container);
+                widgetBox.appendChild(widgetContent);
+                grid.appendChild(widgetBox);
+            });
+
+            renderCalendar(currencies);
+        }
+
+        function renderCalendar(currencies) {
+            const calendarContainer = document.getElementById('calendar-container');
+            calendarContainer.innerHTML = '';
+            
+            const container = document.createElement('div');
+            container.className = 'tradingview-widget-container';
+            container.style.height = '100%';
+            container.style.width = '100%';
+            
+            const widget = document.createElement('div');
+            widget.className = 'tradingview-widget-container__widget';
+            widget.style.height = '100%';
+            widget.style.width = '100%';
+            container.appendChild(widget);
+            
+            const script = document.createElement('script');
+            script.type = 'text/javascript';
+            script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-events.js';
+            script.async = true;
+            script.innerHTML = JSON.stringify({
+                "colorTheme": "dark", "isTransparent": true, "width": "100%", "height": "100%",
+                "locale": currentLocale,
+                "importanceFilter": "0,1", "currencyFilter": currencies
+            });
+            
+            container.appendChild(script);
+            calendarContainer.appendChild(container);
+        }
+
+        function showSetup(type, btnElement) {
+            currentSetup = type;
+            document.querySelectorAll('.setup-btn').forEach(btn => btn.classList.remove('selected'));
+            btnElement.classList.add('selected');
+
+            const resultBox = document.getElementById('setup-result');
+            const t = i18n[currentLocale].setups;
+            
+            if(type === 'compra') {
+                resultBox.style.borderLeftColor = 'var(--buy-color)';
+                resultBox.style.borderTopColor = 'var(--buy-color)';
+                resultBox.style.backgroundColor = 'rgba(38, 166, 154, 0.05)';
+                resultBox.innerHTML = t.compra;
+            } else if(type === 'venda') {
+                resultBox.style.borderLeftColor = 'var(--sell-color)';
+                resultBox.style.borderTopColor = 'var(--sell-color)';
+                resultBox.style.backgroundColor = 'rgba(239, 83, 80, 0.05)';
+                resultBox.innerHTML = t.venda;
+            } else {
+                resultBox.style.borderLeftColor = 'var(--accent)';
+                resultBox.style.borderTopColor = 'var(--accent)';
+                resultBox.style.backgroundColor = 'rgba(242, 169, 0, 0.05)';
+                resultBox.innerHTML = t.lateral;
+            }
+        }
+
+        function calcularLote() {
+            var capital = parseFloat(document.getElementById('capital').value);
+            var risco = parseFloat(document.getElementById('risco').value);
+            var stop = parseFloat(document.getElementById('stop').value);
+            if(capital > 0 && risco > 0 && stop > 0) {
+                var valorRisco = capital * (risco / 100);
+                var tamanhoLote = valorRisco / (stop * 10);
+                document.getElementById('resultadoLote').innerText = tamanhoLote.toFixed(2) + " Lotes";
+                document.getElementById('riskAmount').innerText = valorRisco.toFixed(2);
+                document.getElementById('result-box').style.display = 'block';
+            }
+        }
+
+        window.onload = () => {
+            const defaultElement = document.querySelector('.asset-list li.active');
+            loadAsset('OANDA:EURUSD', 'EUR/USD', 'USD,EUR', defaultElement);
+        };
+    </script>
+</body>
+</html>
